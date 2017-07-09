@@ -1,6 +1,9 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.StdOut;
+
 public class Board {
 	
 	private final int[][] blocks;
@@ -9,27 +12,33 @@ public class Board {
 	
     public Board(int[][] blocks) {           // construct a board from an n-by-n array of blocks
     	                                     // (where blocks[i][j] = block in row i, column j)
-    	this.blocks = blocks;
-    	d = dimension();
+    	d = blocks.length;
+    	this.blocks = new int[d][d];
+    	for (int i = 0; i < d; i++) {
+    		for (int j = 0; j < d; j++) {
+    			this.blocks[i][j] = blocks[i][j];
+    		}
+    	}
     }
                                            
     public int dimension() {                 // board dimension n
-    	return blocks.length;
+    	return d;
     }
     
     public int hamming() {                   // number of blocks out of place
     	int num = 0;
     	for (int i = 0; i < d; i++) {
     		for (int j = 0; j < d; j++) {
-    			if (blocks[i][j] != i * 3 + j + 1) {
+    			if (blocks[i][j] != i * d + j + 1) {
     				num++;
     			}
     		}
     	}
     	// the last block is blank
-		if (blocks[d - 1][d - 1] == 0) {    
-			num--;
-		}
+    	num--;
+//		if (blocks[d - 1][d - 1] == 0) {    
+//			num--;
+//		}
     	return num;
     }
     
@@ -38,10 +47,8 @@ public class Board {
     	for (int i = 0; i < d; i++) {
     		for (int j = 0; j < d; j++) {
     			int number = blocks[i][j];
-    			if (number == 0) {
-    				sum += (d - 1 - i) + (d - 1 - j);
-    			} else {
-    				sum += Math.abs((number - 1) / 3 - i) + Math.abs((number - 1) % 3 - j);
+    			if (number != 0) {
+    				sum += Math.abs((number - 1) / d - i) + Math.abs((number - 1) % d - j);
     			}
     		}
     	}
@@ -50,14 +57,14 @@ public class Board {
     
     public boolean isGoal() {                // is this board the goal board?
     	// eliminate the special case
-    	if (blocks[2][2] != 0)
+    	if (blocks[d - 1][d - 1] != 0)
     		return false;
     	
     	// inspect the rest
     	for (int i = 0; i < d; i++) {
     		for (int j = 0; j < d; j++) {
-    			if (blocks[i][j] != i * 3 + j + 1) {
-    				if (i == 2 && j == 2) 
+    			if (blocks[i][j] != i * d + j + 1) {
+    				if (i == d - 1 && j == d - 1) 
     					continue;
     				else 
     					return false;
@@ -70,24 +77,60 @@ public class Board {
     
     public Board twin() {                    // a board that is obtained by exchanging any pair of blocks
     	int[][] twinBlocks = new int[d][d];
-    	System.arraycopy(blocks, 0, twinBlocks, 0, blocks.length);
-    	int temp = twinBlocks[0][0];
-    	twinBlocks[0][0] = twinBlocks[0][1];
-    	twinBlocks[0][1] = temp;
+    	for (int i = 0; i < d; i++) {
+    		for (int j = 0; j < d; j++) {
+    			twinBlocks[i][j] = blocks[i][j];
+    		}
+    	}
+    	
+    	int p = 0, m = 0;
+    	int q = 0, n = 1;
+    	int cnt = 0;
+		for (int i = 0; i < d; i++) {
+			for (int j = 0; j < d; j++) {
+				if (twinBlocks[i][j] != 0) {
+					if (cnt == 0) {
+						p = i;
+						m = j;
+						cnt++;
+					} else if (cnt == 1) {
+						q = i;
+						n = j;
+						cnt++;
+					} else {
+						break;
+					}
+				}
+			}
+		}
+    	
+    	int temp = twinBlocks[p][m];
+    	twinBlocks[p][m] = twinBlocks[q][n];
+    	twinBlocks[q][n] = temp;
     	return new Board(twinBlocks);
     }
     
     public boolean equals(Object y) {        // does this board equal y?
-    	Board board = (Board) y;
-    	int[][] blocks = board.blocks;
-    	for (int i = 0; i < d; i++) {
-    		for (int j = 0; j < d; j++) {
-    			if (this.blocks[i][j] != blocks[i][j]) {
-    				return false;
-    			}
-    		}
+    	if (y == null) {
+    		return false;
     	}
-    	return true;
+    	if (y instanceof Board) {
+			Board board = (Board) y;
+			if (this.d != board.d) {
+				return false;
+			}
+			int[][] blocks = board.blocks;
+			for (int i = 0; i < d; i++) {
+				for (int j = 0; j < d; j++) {
+					if (this.blocks[i][j] != blocks[i][j]) {
+						return false;
+					}
+				}
+			}
+			return true;
+		} else {
+			return false;
+		}
     }
     
     public Iterable<Board> neighbors() {     // all neighboring boards
@@ -107,7 +150,11 @@ public class Board {
     	if (m > 0) {
     		// move up square down
     		int[][] tempBlocks = new int[d][d];
-    		System.arraycopy(blocks, 0, tempBlocks, 0, blocks.length);
+    		for (int i = 0; i < d; i++) {
+        		for (int j = 0; j < d; j++) {
+        			tempBlocks[i][j] = blocks[i][j];
+        		}
+        	}
     		tempBlocks[m][n] = tempBlocks[m - 1][n];
     		tempBlocks[m - 1][n] = 0;
     		list.add(new Board(tempBlocks));
@@ -115,7 +162,11 @@ public class Board {
     	if (m < d - 1) {
     		// move down square up
     		int[][] tempBlocks = new int[d][d];
-    		System.arraycopy(blocks, 0, tempBlocks, 0, blocks.length);
+    		for (int i = 0; i < d; i++) {
+        		for (int j = 0; j < d; j++) {
+        			tempBlocks[i][j] = blocks[i][j];
+        		}
+        	}
     		tempBlocks[m][n] = tempBlocks[m + 1][n];
     		tempBlocks[m + 1][n] = 0;
     		list.add(new Board(tempBlocks));
@@ -123,7 +174,11 @@ public class Board {
     	if (n > 0) {
     		// move left square right
     		int[][] tempBlocks = new int[d][d];
-    		System.arraycopy(blocks, 0, tempBlocks, 0, blocks.length);
+    		for (int i = 0; i < d; i++) {
+        		for (int j = 0; j < d; j++) {
+        			tempBlocks[i][j] = blocks[i][j];
+        		}
+        	}
     		tempBlocks[m][n] = tempBlocks[m][n - 1];
     		tempBlocks[m][n - 1] = 0;
     		list.add(new Board(tempBlocks));
@@ -131,7 +186,11 @@ public class Board {
     	if (n < d - 1) {
     		// move right square left
     		int[][] tempBlocks = new int[d][d];
-    		System.arraycopy(blocks, 0, tempBlocks, 0, blocks.length);
+    		for (int i = 0; i < d; i++) {
+        		for (int j = 0; j < d; j++) {
+        			tempBlocks[i][j] = blocks[i][j];
+        		}
+        	}
     		tempBlocks[m][n] = tempBlocks[m][n + 1];
     		tempBlocks[m][n + 1] = 0;
     		list.add(new Board(tempBlocks));
@@ -153,6 +212,16 @@ public class Board {
     }
 
     public static void main(String[] args) { // unit tests (not graded)
-    	
+    	// create initial board from file
+        In in = new In(args[0]);
+        int n = in.readInt();
+        int[][] blocks = new int[n][n];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                blocks[i][j] = in.readInt();
+        Board initial = new Board(blocks);
+        
+        StdOut.println(initial);
+        StdOut.println(initial.isGoal());
     }
 }
